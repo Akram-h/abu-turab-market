@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>لوحة الإدارة — مركز أبو تراب</title>
+<link rel="icon" href="/logo.svg"><link rel="stylesheet" href="/style.css">
+<style>
+.login{min-height:100vh;display:grid;place-items:center;background:var(--gd);padding:16px}
+.lb{background:#fff;border-radius:20px;padding:28px;width:min(380px,100%);text-align:center;box-shadow:var(--sh)}
+.lb img{width:76px}.lb h2{margin:8px 0 16px}.lb input{margin-bottom:10px;text-align:center}
+#err{color:var(--red);min-height:24px;font-size:14px}
+header{background:var(--gd);color:#fff;position:sticky;top:0;z-index:5}
+.top{display:flex;align-items:center;gap:10px;padding:8px 0}.top img{width:38px}.top b{flex:1}
+nav{display:flex;gap:4px;overflow-x:auto}
+nav button{background:none;border:0;color:#cfe0d3;padding:10px 16px;cursor:pointer;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap}
+nav button.on{color:#fff;border-color:var(--y)}
+nav i{background:var(--y);color:#1a1300;border-radius:99px;padding:0 7px;font-style:normal;font-size:12px;margin-inline-start:4px}
+.pn{background:#fff;border-radius:16px;box-shadow:var(--sh);padding:16px;margin:14px 0}
+.pn h3{margin:0 0 12px}.rw{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}.rw>*{flex:1 1 140px}.rw>.btn,.rw>label{flex:0 0 auto}
+.ord{border:1.5px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px}.ord.new{border-color:var(--y);background:#fffbeb}
+.ord ul{margin:6px 0;padding-inline-start:20px}.ord .h{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)}
+.row .th{width:46px;height:46px;border-radius:10px;background:#eef2ec;overflow:hidden;display:grid;place-items:center;flex:none}.row .th img{width:100%;height:100%;object-fit:cover}
+.row .f{flex:1;min-width:0}.row small{color:var(--mut)}.off{opacity:.5}
+.pv{width:60px;height:60px;border-radius:10px;object-fit:cover;display:none}
+</style></head><body>
+<div class="login" id="lg"><form class="lb" onsubmit="login(event)"><img src="/logo.svg" alt=""><h2>لوحة إدارة المركز</h2>
+<input id="pw" type="password" placeholder="كلمة المرور" autocomplete="current-password" required><div id="err"></div><button class="btn" style="width:100%">تسجيل الدخول</button></form></div>
+<div id="ap" style="display:none">
+<header><div class="wrap"><div class="top"><img src="/logo.svg" alt=""><b>مركز أبو تراب — الإدارة</b><button class="btn sm y" onclick="logout()">خروج</button></div>
+<nav id="nav"></nav></div></header>
+<main class="wrap" id="main"></main></div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>Math.round(n).toLocaleString("en-US")+" د.ع";
+let D={settings:{},cats:[],products:[]},O=[],tab="orders",seen=null,pend="",pf="";
+async function api(m,u,b){const r=await fetch(u,{method:m,headers:{"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined});
+  if(r.status===401&&u!=="/api/admin/login"){show(false);throw new Error("auth")}
+  const j=await r.json();if(!r.ok)throw new Error(j.error||"خطأ");return j}
+function show(on){$("lg").style.display=on?"none":"grid";$("ap").style.display=on?"":"none"}
+async function login(e){e.preventDefault();$("err").textContent="";
+  try{await api("POST","/api/admin/login",{password:$("pw").value});$("pw").value="";start()}catch(x){$("err").textContent=x.message}}
+async function logout(){document.cookie="sid=;Max-Age=0;path=/";location.reload()}
+async function loadStore(){D=await (await fetch("/api/store")).json()}
+async function loadOrders(){O=await api("GET","/api/admin/orders");
+  const ids=O.filter(o=>!o.done).map(o=>o.id);
+  if(seen&&ids.some(i=>!seen.includes(i))){beep();document.title="🔔 طلب جديد!"}seen=ids;
+  if(tab==="orders")draw();else nav()}
+async function start(){show(true);await loadStore();await loadOrders();draw();if(!window._t)window._t=setInterval(()=>loadOrders().catch(()=>{}),8000)}
+function beep(){try{const c=new (window.AudioContext||window.webkitAudioContext)();[0,.3,.6].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.frequency.value=880;o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(.25,c.currentTime+t);o.start(c.currentTime+t);o.stop(c.currentTime+t+.18)})}catch(e){}}
+function nav(){const n=O.filter(o=>!o.done).length;$("nav").innerHTML=[["orders","الطلبات"+(n?`<i>${n}</i>`:"")],["products","المنتجات"],["cats","الأقسام"],["set","التوصيل والخصم"]].map(([k,l])=>`<button class="${k===tab?"on":""}" onclick="tab='${k}';draw()">${l}</button>`).join("")}
+function draw(){nav();if(tab==="orders")document.title="لوحة الإدارة — مركز أبو تراب";$("main").innerHTML=({orders,products,cats,set})[tab]()}
+const orders=()=>`<div class="pn"><h3>الطلبات</h3>${O.length?O.map(o=>`<div class="ord ${o.done?"":"new"}"><div class="h"><b>طلب #${o.no} — ${esc(o.name)}</b><small>${new Date(o.ts).toLocaleString("ar-IQ")}</small></div>
+<div>📞 <a href="tel:${esc(o.phone)}">${esc(o.phone)}</a></div><div>📍 ${esc(o.addr)}</div>${o.note?`<div>📝 ${esc(o.note)}</div>`:""}
+<ul>${o.items.map(i=>`<li>${esc(i.n)} × ${i.q} ${esc(i.u)}</li>`).join("")}</ul>
+<div>الإجمالي: <b>${fmt(o.total)}</b> <small>${o.disc?`(خصم ${fmt(o.disc)}) `:""}${o.fee?`توصيل ${fmt(o.fee)}`:"توصيل مجاني"}</small></div>
+<div class="rw" style="margin:8px 0 0">${o.done?"<span>✅ تم التجهيز</span>":`<button class="btn sm" onclick="oact('${o.id}','PUT')">تم التجهيز</button>`}<button class="btn r sm" onclick="if(confirm('حذف الطلب؟'))oact('${o.id}','DELETE')">حذف</button><a class="btn sm" style="background:#25d366;text-decoration:none" target="_blank" rel="noopener" href="${wa(o)}">واتساب للزبون</a><button class="btn o sm" onclick="window.print()">طباعة</button></div></div>`).join(""):`<div class="empty">لا توجد طلبات بعد</div>`}</div>`;
+function wa(o){let n=String(o.phone).replace(/\D/g,"");if(n.startsWith("00"))n=n.slice(2);else if(n.startsWith("0"))n="964"+n.slice(1);
+  return "https://wa.me/"+n+"?text="+encodeURIComponent("مرحباً "+o.name+"، معك مركز أبو تراب للتسوق بخصوص طلبك رقم "+o.no+" بمبلغ "+fmt(o.total))}
+async function oact(id,m){await api(m,"/api/admin/orders/"+id);loadOrders()}
+const products=()=>{const list=D.products.filter(p=>!pf||p.cat===pf);return `<div class="pn"><h3>إضافة منتج</h3>
+<div class="rw"><input id="pn" placeholder="اسم المنتج"><input id="pp" type="number" min="0" placeholder="السعر (د.ع)"><input id="pu" placeholder="الوحدة (كغم، علبة، قطعة)"><input id="ps" type="number" min="0" placeholder="الكمية المتوفرة (اتركها فارغة = غير محدودة)"></div>
+<div class="rw"><select id="pc">${D.cats.map(c=>`<option>${esc(c.name)}</option>`).join("")}</select><input type="file" id="pi" accept="image/*" onchange="pick(this)"><img class="pv" id="pv" alt=""><button class="btn" onclick="addP()">حفظ المنتج</button></div></div>
+<div class="pn"><h3>المنتجات (${list.length})</h3><div class="rw"><select onchange="pf=this.value;draw()"><option value="">كل الأقسام</option>${D.cats.map(c=>`<option ${c.name===pf?"selected":""}>${esc(c.name)}</option>`).join("")}</select></div>
+${list.map(p=>`<div class="row ${p.on===false?"off":""}"><div class="th">${p.img?`<img src="${esc(p.img)}" alt="">`:"🛒"}</div><div class="f">${esc(p.name)}<br><small>${esc(p.cat||"بدون قسم")} • ${fmt(p.price)} ${esc(p.unit)} • ${p.stock==null?"كمية غير محدودة":p.stock<=0?"<b style='color:var(--red)'>نفذت الكمية</b>":"المتوفر: "+p.stock}</small></div>
+<button class="btn o sm" onclick="editS('${p.id}')">الكمية</button>
+<button class="btn o sm" onclick="editP('${p.id}')">السعر</button><button class="btn o sm" onclick="togP('${p.id}',${p.on===false})">${p.on===false?"إظهار":"إخفاء"}</button><button class="btn r sm" onclick="delP('${p.id}')">حذف</button></div>`).join("")||`<div class="empty">لا توجد منتجات</div>`}</div>`};
+function pick(i){const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const m=new Image();m.onload=()=>{const c=document.createElement("canvas"),s=Math.min(1,600/Math.max(m.width,m.height));c.width=m.width*s;c.height=m.height*s;c.getContext("2d").drawImage(m,0,0,c.width,c.height);pend=c.toDataURL("image/jpeg",.8);$("pv").src=pend;$("pv").style.display="block"};m.src=r.result};r.readAsDataURL(f)}
+async function addP(){const name=$("pn").value.trim(),price=$("pp").value;if(!name||price==="")return alert("أدخل الاسم والسعر");
+  try{let img="";if(pend){img=(await api("POST","/api/admin/upload",{data:pend})).url;pend=""}
+    await api("POST","/api/admin/products",{name,price:+price,unit:$("pu").value,stock:$("ps").value,cat:$("pc").value,img});await loadStore();draw()}catch(e){alert(e.message)}}
+async function editP(id){const p=D.products.find(x=>x.id===id),v=prompt("السعر الجديد لـ "+p.name,p.price);if(v===null||v===""||isNaN(+v))return;await api("PUT","/api/admin/products/"+id,{price:+v});await loadStore();draw()}
+async function editS(id){const p=D.products.find(x=>x.id===id),v=prompt("الكمية المتوفرة من "+p.name+" (0 = نفذت، فارغ = غير محدودة)",p.stock==null?"":p.stock);if(v===null)return;await api("PUT","/api/admin/products/"+id,{stock:v===""?null:+v});await loadStore();draw()}
+async function togP(id,on){await api("PUT","/api/admin/products/"+id,{on});await loadStore();draw()}
+async function delP(id){if(!confirm("حذف المنتج نهائياً؟"))return;await api("DELETE","/api/admin/products/"+id);await loadStore();draw()}
+const cats=()=>`<div class="pn"><h3>الأقسام</h3>${D.cats.map((c,i)=>`<div class="row"><span style="font-size:26px">${esc(c.icon)}</span><div class="f">${esc(c.name)}<br><small>${D.products.filter(p=>p.cat===c.name).length} منتج</small></div><button class="btn r sm" onclick="delC(${i})">حذف</button></div>`).join("")}
+<div class="rw" style="margin-top:12px"><input id="cn" placeholder="اسم قسم جديد"><input id="ci" placeholder="أيقونة (إيموجي)" style="max-width:150px"><button class="btn" onclick="addC()">إضافة قسم</button></div></div>`;
+async function saveC(a){D.cats=await api("PUT","/api/admin/cats",a);draw()}
+function addC(){const n=$("cn").value.trim();if(n)saveC([...D.cats,{name:n,icon:$("ci").value.trim()||"🛒"}])}
+function delC(i){if(confirm("حذف القسم؟ المنتجات تبقى بدون قسم."))saveC(D.cats.filter((_,j)=>j!==i))}
+const set=()=>{const s=D.settings;return `<div class="pn"><h3>التوصيل والخصم</h3><div class="rw"><label><input type="checkbox" id="sf" style="width:auto" ${s.free?"checked":""}> التوصيل مجاني</label></div>
+<div class="rw"><label>سعر التوصيل (د.ع)<input id="sfe" type="number" min="0" value="${s.fee}"></label><label>خصم شامل %<input id="sd" type="number" min="0" max="100" value="${s.disc}"></label><label>أقل مبلغ للطلب<input id="sm" type="number" min="0" value="${s.minOrder||0}"></label></div>
+<button class="btn" onclick="saveS()">حفظ الإعدادات</button></div>`};
+async function saveS(){try{D.settings=await api("PUT","/api/admin/settings",{free:$("sf").checked,fee:$("sfe").value,disc:$("sd").value,minOrder:$("sm").value});alert("تم الحفظ")}catch(e){alert(e.message)}}
+api("GET","/api/admin/me").then(start).catch(()=>show(false));
+</script></body></html>
