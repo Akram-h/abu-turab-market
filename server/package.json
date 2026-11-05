@@ -1,0 +1,10 @@
+{
+  "name": "alhamam-online",
+  "version": "1.0.0",
+  "description": "منصة الهمام التعليمية — نسخة متصلة بالإنترنت (PWA + خادم)",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "license": "UNLICENSED",
+  "dependencies": { "pg": "^8.11.3" }
+}
