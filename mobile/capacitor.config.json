@@ -1,0 +1,8 @@
+{
+  "appId": "iq.alhamam.platform",
+  "appName": "منصة الهمام التعليمية",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "ios": { "contentInset": "never" },
+  "android": { "allowMixedContent": false }
+}

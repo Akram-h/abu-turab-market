@@ -1,0 +1,28 @@
+{
+  "name": "alhamam-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "منصة الهمام التعليمية — تطبيقا أندرويد وiOS (Capacitor)",
+  "scripts": {
+    "prepare:web": "node scripts/prepare.js",
+    "assets": "npx @capacitor/assets generate",
+    "add:android": "npx cap add android",
+    "add:ios": "npx cap add ios",
+    "sync": "node scripts/prepare.js && npx cap sync",
+    "android": "npx cap open android",
+    "ios": "npx cap open ios",
+    "doctor": "npx cap doctor"
+  },
+  "dependencies": {
+    "@capacitor/android": "latest",
+    "@capacitor/app": "latest",
+    "@capacitor/core": "latest",
+    "@capacitor/filesystem": "latest",
+    "@capacitor/ios": "latest",
+    "@capacitor/share": "latest"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "latest",
+    "@capacitor/cli": "latest"
+  }
+}
